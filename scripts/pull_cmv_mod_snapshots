@@ -1,0 +1,103 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar  2 09:56:43 2017
+
+@author: emg
+"""
+import pandas as pd
+import requests
+import re
+from bs4 import BeautifulSoup
+from prawini import get_params
+import seaborn as sns
+
+params = get_params()
+headers={'User-agent':params['user_agent']}
+
+cmv_mods = 'https://www.reddit.com/r/changemyview/about/moderators'
+
+url = 'http://web.archive.org/web/20130101000000*/https://www.reddit.com/r/changemyview/about/moderators.json'
+
+response = requests.get(url, headers=headers)
+data = response.json()
+
+url1 = 'http://web.archive.org/web/20130401000000*/https://www.reddit.com/r/changemyview/about/moderators'
+url2 = 'http://web.archive.org/web/20140515000000*/https://www.reddit.com/r/changemyview/about/moderators'
+url3 = 'http://web.archive.org/web/20150515000000*/https://www.reddit.com/r/changemyview/about/moderators'
+
+def make_soup(url):
+    r = requests.get(url, headers=headers)
+    soup = BeautifulSoup(r.text, "html5lib")
+    return soup
+
+soup1 = make_soup(url1)
+soup2 = make_soup(url2)
+soup3 = make_soup(url3)
+
+date_captures1 = soup1.findAll('div', {'class' : 'date captures'})
+date_captures2 = soup2.findAll('div', {'class' : 'date captures'})
+date_captures3 = soup3.findAll('div', {'class' : 'date captures'})
+
+snapshots = []
+for date_captures in [date_captures1, date_captures2, date_captures3]:
+    for date in date_captures:
+        for snapshot in date.findAll(name='li'):
+            snapshots.append(snapshot)
+
+unique_urls = []
+for snapshot in snapshots:
+    unique_url = str(snapshot).split('href="')[1].split('">')[0]
+    unique_urls.append(unique_url)
+
+BASE_URL = 'http://web.archive.org'
+urls, timestamps = [], []
+for item in unique_urls:
+    url = BASE_URL + item
+    urls.append(url)
+    timestamp = item.split('/web/')[1].split('/')[0]
+    timestamps.append(timestamp)
+    
+columns = {'snapshot' : urls, 'timestamp' : timestamps}
+df = pd.DataFrame(columns)
+#df.to_csv('/Users/emg/Programmming/GitHub/cmv/raw_data/cmv_mod_snapshots.csv')
+
+##### SCRAPE  + COMPILE MOD INFO
+df = pd.read_csv('/Users/emg/Programmming/GitHub/cmv/raw_data/cmv_mod_snapshots.csv', index_col=0)
+
+def scrape_mod_table(url): 
+    '''pulls mod info from soup object of /about/moderators snapshot
+       dumps info into a dataframe '''
+    soup = make_soup(url)
+    table = soup.find('div', attrs={'class':'moderator-table'})
+    table_body = table.find('tbody')
+    rows = table_body.find_all('tr')
+    name, href, permissions = [], [], []
+    for row in rows:
+        #info = mod.parent.parent.parent
+        #children = info.findChildren()
+        name.append(row.a.text)
+        href.append(row.a['href'])
+        permissions.append(row.find('input',{'name':'permissions'})['value'])
+    columns = {'name': name, 'useraccount': href, 'permissions' : permissions}
+    df = pd.DataFrame(columns)
+    dfs.append(df)
+    
+dfs = []
+for url in df['snapshot']:
+    scrape_mod_table(url)
+
+mods = pd.concat(dfs)
+mods.to_csv('/Users/emg/Programmming/GitHub/cmv/tidy_data/mod_df.csv')
+
+
+##### USING ANDY'S EVENT VIS
+output = pd.read_csv('/Users/emg/Programmming/GitHub/cmv/tidy_data/day_mod_matrix.csv', index_col=0)
+output.index = pd.to_datetime(output.index)
+
+weeks = output.resample('W').last()
+s = weeks.sum()
+s = s[s>0]
+weeks = weeks[s.index]
+
+sns.clustermap(weeks.T, row_cluster=True)
