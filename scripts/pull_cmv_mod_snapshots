@@ -17,11 +17,6 @@ headers={'User-agent':params['user_agent']}
 
 cmv_mods = 'https://www.reddit.com/r/changemyview/about/moderators'
 
-url = 'http://web.archive.org/web/20130101000000*/https://www.reddit.com/r/changemyview/about/moderators.json'
-
-response = requests.get(url, headers=headers)
-data = response.json()
-
 url1 = 'http://web.archive.org/web/20130401000000*/https://www.reddit.com/r/changemyview/about/moderators'
 url2 = 'http://web.archive.org/web/20140515000000*/https://www.reddit.com/r/changemyview/about/moderators'
 url3 = 'http://web.archive.org/web/20150515000000*/https://www.reddit.com/r/changemyview/about/moderators'
