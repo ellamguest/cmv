@@ -17,7 +17,7 @@ headers={'User-agent':params['user_agent']}
 
 cmv_mods = 'https://www.reddit.com/r/changemyview/about/moderators'
 
-url1 = 'http://web.archive.org/web/20130401000000*/https://www.reddit.com/r/changemyview/about/moderators'
+#url1 = 'http://web.archive.org/web/20130401000000*/https://www.reddit.com/r/changemyview/about/moderators'
 url2 = 'http://web.archive.org/web/20140515000000*/https://www.reddit.com/r/changemyview/about/moderators'
 url3 = 'http://web.archive.org/web/20150515000000*/https://www.reddit.com/r/changemyview/about/moderators'
 
@@ -26,16 +26,16 @@ def make_soup(url):
     soup = BeautifulSoup(r.text, "html5lib")
     return soup
 
-soup1 = make_soup(url1)
+#soup1 = make_soup(url1)
 soup2 = make_soup(url2)
 soup3 = make_soup(url3)
 
-date_captures1 = soup1.findAll('div', {'class' : 'date captures'})
+#date_captures1 = soup1.findAll('div', {'class' : 'date captures'})
 date_captures2 = soup2.findAll('div', {'class' : 'date captures'})
 date_captures3 = soup3.findAll('div', {'class' : 'date captures'})
 
 snapshots = []
-for date_captures in [date_captures1, date_captures2, date_captures3]:
+for date_captures in [date_captures2, date_captures3]:
     for date in date_captures:
         for snapshot in date.findAll(name='li'):
             snapshots.append(snapshot)
@@ -67,14 +67,15 @@ def scrape_mod_table(url):
     table = soup.find('div', attrs={'class':'moderator-table'})
     table_body = table.find('tbody')
     rows = table_body.find_all('tr')
-    name, href, permissions = [], [], []
+    name, href, permissions, date = [], [], [], []
     for row in rows:
         #info = mod.parent.parent.parent
         #children = info.findChildren()
         name.append(row.a.text)
+        date.append(row.time['datetime'])
         href.append(row.a['href'])
         permissions.append(row.find('input',{'name':'permissions'})['value'])
-    columns = {'name': name, 'useraccount': href, 'permissions' : permissions}
+    columns = {'name':name, 'date':date, 'useraccount':href, 'permissions':permissions, 'pubdate':url[27:41]}
     df = pd.DataFrame(columns)
     dfs.append(df)
     
@@ -83,7 +84,7 @@ for url in df['snapshot']:
     scrape_mod_table(url)
 
 mods = pd.concat(dfs)
-mods.to_csv('/Users/emg/Programmming/GitHub/cmv/tidy_data/mod_df.csv')
+mods.to_csv('/Users/emg/Programmming/GitHub/cmv/tidy_data/dated_mod_df.csv')
 
 
 ##### USING ANDY'S EVENT VIS
