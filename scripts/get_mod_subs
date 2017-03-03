@@ -14,18 +14,11 @@ params = get_params()
 headers={'User-agent':params['user_agent']}
 
 mods = pd.read_csv('/Users/emg/Programmming/GitHub/cmv/tidy_data/mod_df.csv', index_col=0)
-n = names[2]
-
-url = 'https://www.reddit.com/user/{}'.format(n)
-response = requests.get(url, headers=headers)
-data = response.json()
 
 def make_soup(url):
     r = requests.get(url, headers=headers)
     soup = BeautifulSoup(r.text, "html5lib")
     return soup
-
-soup = make_soup(url)
 
 names = list((set(mods['name'])))
 names.remove('AutoModerator')
@@ -74,14 +67,14 @@ mods = zip(*edges)[0]
 subs = zip(*edges)[1]
 
 edgelist = pd.DataFrame(data={'mod':mods,'sub':subs})
-edgelist.to_csv('/Users/emg/Programmming/GitHub/R-mod-nets/cmv/data/edgelist.csv', index=False)
+edgelist.to_csv('/Users/emg/Programmming/GitHub/R-mod-nets/t_d/data/edgelist.csv', index=False)
 
 nodes = mods + subs
 modes = [0] *len(mods) + [1]*len(subs)
 
 nodelist = pd.DataFrame(data={'name':nodes, 'mode':modes}, columns=['name','mode'])
 nodelist.drop_duplicates('name', inplace=True)
-nodelist.to_csv('/Users/emg/Programmming/GitHub/R-mod-nets/cmv/data/nodelist.csv', index=False)
+nodelist.to_csv('/Users/emg/Programmming/GitHub/R-mod-nets/t_d/data/nodelist.csv', index=False)
 
 
 
