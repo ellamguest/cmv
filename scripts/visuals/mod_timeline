@@ -13,7 +13,7 @@ import scipy as sp
 import datetime
 
 ### CONVERT MOD LIST TO DAY X MOD MATRIX
-df1 = pd.read_csv('/Users/emg/Programmming/GitHub/cmv/tidy_data/dated_mod_df.csv', index_col=0)
+df1 = pd.read_csv('/Users/emg/Programmming/GitHub/cmv/tidy_data/dated_mod_df.csv')
 
 def get_datetime(string):
     string = ''.join(ch for ch in str(string) if ch.isalnum())
@@ -23,28 +23,30 @@ def get_datetime(string):
 df1.pubdate = df1.pubdate.apply(get_datetime)
 df1['date'] = pd.to_datetime(df1['date'])
 
-subset = (df1[['name', 'date', 'pubdate']].copy()
+subset1 = (df1[['name', 'date', 'pubdate']].copy()
             .assign(
                 date=lambda df: df['date'].pipe(pd.to_datetime).dt.normalize(),
                 pubdate=lambda df: df['pubdate'].pipe(pd.to_datetime).dt.normalize()))
 
-subset = subset.sort_values(['name','date'])
+subset1 = subset1.sort_values(['name','date'])
 
-seen = (subset
+#### this section not translating to this data
+appeared = (subset1
                 .groupby(['date', 'name']).first()['pubdate']
                 .unstack()
                 .isnull()
                 .pipe(lambda x: ~x)
                 .resample('D').mean()
                 .fillna(0)
-                .astype(bool))
+                .astype(int))
 
 
-not_seen = (subset
-                .groupby(['pubdate', 'name']).first()['date']
+last_seen = (subset1
+                .groupby(['pubdate', 'name']).last()['date']
                 .unstack()
                 .isnull()
-                .resample('D').pad())
+                .resample('D').pad()
+                .astype(int))
     
 
 output = {}
