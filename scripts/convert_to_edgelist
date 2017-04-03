@@ -8,54 +8,42 @@ Created on Mon Apr  3 12:00:37 2017
 
 import pandas as pd
 
-df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/raw_data/all_sub_mods.csv', index_col=0)
+subreddit = 'changemyview'
+folder = 'cmv'
 
-edgelist = zip(df['name'],df['sub'])
-nodelist = list(df['name']) + list(df['sub'])
+subreddit = 'The_Donald'
+folder = 'the_donald_project'
 
 
+#df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/raw_data/all_sub_mods.csv',
+#                 index_col=0)
+df = pd.read_csv('/Users/emg/Programming/GitHub/the_donald_project/raw_data/all_sub_mods.csv',
+                 index_col=0)
 
-
-# convert to aff matrix
-df['x'] = 1
-df.drop_duplicates(subset=['name','sub'], inplace=True) # why are there duplicte pairs?
-modxsubs = df.pivot(index = 'name', columns = 'sub', values='x')
+def get_lists(df):
+    ''' return edgelist, nodelist from df with
+        colums (moderator) 'name' and 'sub'
+    '''
+    edgelist = df[['name','sub']]
+    nodelist = pd.DataFrame(list(set(df['name'])) + list(set(df['sub'])))
+    modes = [0]*len(list(set(df['name']))) + [1]*len(list(set(df['sub'])))
+    nodelist['type'] = modes
+    nodelist['name']=nodelist[0].apply(lambda x: x.strip('r/'))
+    return edgelist, nodelist
 
 # limit to subs and mods w/ d > 1
-c0 = modxsubs.count()
-repeats = c0[c0>1].index
-modxsubs = modxsubs[repeats]
-c1 = modxsubs.count(1)
-repeats = c1[c1>1].index
-modxsubs = modxsubs[modxsubs.index.isin(repeats)]
+sub_count = df.groupby('sub')['sub'].count()
+repeats = sub_count[sub_count>1].index
+subset = df[df['sub'].isin(repeats)]
+mod_count = subset.groupby('name')['name'].count()
+repeats = mod_count[mod_count>1].index
+subset = subset[subset['name'].isin(repeats)]
 
+edgelist, nodelist = get_lists(subset)
 
-# CREATE EDGELISTS FOR R VISUALS
-df = modxsubs[modxsubs['count']>1]
+#edgelist.to_csv('/Users/emg/Programming/GitHub/cmv/tidy_data/edgelist_subset.csv', index=False)
+#nodelist.to_csv('/Users/emg/Programming/GitHub/cmv/tidy_data/nodelist_subset.csv', index=False)
 
-sub_adj = mod_subs.dot(mod_subs.T)
-sub_adj.to_csv('/Users/emg/Programmming/GitHub/R-mod-nets/cmv/data/sub_adj_matrix.csv', index=False)
-
-mod_adj = mod_subs.T.dot(mod_subs)
-mod_adj.to_csv('/Users/emg/Programmming/GitHub/R-mod-nets/cmv/data/mod_adj_matrix.csv', index=False)
-
-edges = []
-for keys, items in d.iteritems():
-    for item in items:
-        edges.append([keys, item])
-        
-mods = zip(*edges)[0]
-subs = zip(*edges)[1]
-
-edgelist = pd.DataFrame(data={'mod':mods,'sub':subs})
-edgelist.to_csv('/Users/emg/Programmming/GitHub/R-mod-nets/t_d/data/edgelist.csv', index=False)
-
-nodes = mods + subs
-modes = [0] *len(mods) + [1]*len(subs)
-
-nodelist = pd.DataFrame(data={'name':nodes, 'mode':modes}, columns=['name','mode'])
-nodelist.drop_duplicates('name', inplace=True)
-nodelist.to_csv('/Users/emg/Programmming/GitHub/R-mod-nets/t_d/data/nodelist.csv', index=False)
-
-
+edgelist.to_csv('/Users/emg/Programming/GitHub/the_donald_project/tidy_data/edgelist_subset.csv', index=False)
+nodelist.to_csv('/Users/emg/Programming/GitHub/the_donald_project/tidy_data/nodelist_subset.csv', index=False)
 

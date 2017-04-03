@@ -13,7 +13,14 @@ from prawini import *
 params = get_params()
 headers={'User-agent':params['user_agent']}
 
-df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/raw_data/current-mod-table.csv', index_col=0)
+#for cmv
+df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/raw_data/current-mod-table.csv',
+                 index_col=0)
+
+
+#for TD
+df = pd.read_csv('/Users/emg/Programming/GitHub/the_donald_project/raw_data/current-mod-table.csv',
+                 index_col=0)
 
 names = list((df[df['name']!='AutoModerator']['name']))
 names.remove('AutoModerator')
@@ -48,7 +55,7 @@ mod_subs = pd.DataFrame(data, index=values)
 mod_subs = mod_subs.applymap(lambda x: 1 if x else 0)
 counts = mod_subs.T.sum()
 
-mod_subs.to_csv('/Users/emg/Programming/GitHub/cmv/raw_data/current-sub-mod-matrix.csv')
+mod_subs.to_csv('/Users/emg/Programming/GitHub/the_donald_project/raw_data/current-sub-mod-matrix.csv')
 
 
 
