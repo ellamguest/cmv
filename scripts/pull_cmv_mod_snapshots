@@ -9,7 +9,7 @@ import pandas as pd
 import requests
 import re
 from bs4 import BeautifulSoup
-from prawini import get_params
+from prawini import *
 import seaborn as sns
 
 params = get_params()

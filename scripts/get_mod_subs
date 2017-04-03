@@ -1,4 +1,4 @@
-17#!/usr/bin/env python2
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Thu Mar  2 14:23:59 2017
@@ -8,20 +8,20 @@ Created on Thu Mar  2 14:23:59 2017
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from prawini import get_params
+from prawini import *
 
 params = get_params()
 headers={'User-agent':params['user_agent']}
 
-mods = pd.read_csv('/Users/emg/Programmming/GitHub/cmv/tidy_data/mod_df.csv', index_col=0)
+df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/raw_data/current-mod-table.csv', index_col=0)
+
+names = list((df[df['name']!='AutoModerator']['name']))
+names.remove('AutoModerator')
 
 def make_soup(url):
     r = requests.get(url, headers=headers)
     soup = BeautifulSoup(r.text, "html5lib")
     return soup
-
-names = list((set(mods['name'])))
-names.remove('AutoModerator')
 
 d = {}
 for name in names:
@@ -48,8 +48,11 @@ mod_subs = pd.DataFrame(data, index=values)
 mod_subs = mod_subs.applymap(lambda x: 1 if x else 0)
 counts = mod_subs.T.sum()
 
-mod_subs.to_csv('/Users/emg/Programmming/GitHub/R-mod-nets/cmv/data/sub_mod_matrix.csv')
+mod_subs.to_csv('/Users/emg/Programming/GitHub/cmv/raw_data/current-sub-mod-matrix.csv')
 
+
+
+# CREATE EDGELISTS FOR R VISUALS
 df = mod_subs[mod_subs['count']>1]
 
 sub_adj = mod_subs.dot(mod_subs.T)
