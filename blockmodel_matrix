@@ -1,0 +1,40 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr  4 10:44:15 2017
+
+@author: emg
+"""
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('/Users/emg/Programming/GitHub/the_donald_project/raw_data/all_sub_mods.csv',
+                 index_col=0)
+
+df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/raw_data/all_sub_mods.csv',index_col=0)
+
+x = df[['name','sub']]
+x['present'] = 1
+ 
+m = pd.pivot_table(x, values='present', index=['name'],columns=['sub'])
+m.fillna(value=0, inplace=True)
+
+s = m.sum(1)
+reps = s[s>3].index
+
+m = m[m.index.isin(reps)]
+
+
+# PLOT HEATMAP
+cg = sns.clustermap(m, figsize=(15,13))
+plt.setp(cg.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+cg.ax_heatmap.set_title('changemyview Subreddit-Moderator Matrix', fontsize=20)
+cg.ax_heatmap.set_xlabel('Moderator', fontsize=15)
+cg.ax_heatmap.set_ylabel('Subreddit', fontsize=15)
+
+
+
+plt.savefig('/Users/emg/Google Drive/PhD/presenting/ss_phd_seminar_april_17/visuals/td_sub_mod_mat.png', figsize=(16,12))
+

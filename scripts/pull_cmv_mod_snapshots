@@ -20,6 +20,7 @@ cmv_mods = 'https://www.reddit.com/r/changemyview/about/moderators'
 #url1 = 'http://web.archive.org/web/20130401000000*/https://www.reddit.com/r/changemyview/about/moderators'
 url2 = 'http://web.archive.org/web/20140515000000*/https://www.reddit.com/r/changemyview/about/moderators'
 url3 = 'http://web.archive.org/web/20150515000000*/https://www.reddit.com/r/changemyview/about/moderators'
+url4 = 'http://web.archive.org/web/20170415000000*/https://www.reddit.com/r/changemyview/about/moderators'
 
 def make_soup(url):
     r = requests.get(url, headers=headers)
@@ -29,13 +30,15 @@ def make_soup(url):
 #soup1 = make_soup(url1)
 soup2 = make_soup(url2)
 soup3 = make_soup(url3)
+soup4 = make_soup(url4)
 
 #date_captures1 = soup1.findAll('div', {'class' : 'date captures'})
 date_captures2 = soup2.findAll('div', {'class' : 'date captures'})
 date_captures3 = soup3.findAll('div', {'class' : 'date captures'})
+date_captures4 = soup4.findAll('div', {'class' : 'date captures'})
 
 snapshots = []
-for date_captures in [date_captures2, date_captures3]:
+for date_captures in [date_captures2, date_captures3, date_captures4]:
     for date in date_captures:
         for snapshot in date.findAll(name='li'):
             snapshots.append(snapshot)
@@ -55,10 +58,10 @@ for item in unique_urls:
     
 columns = {'snapshot' : urls, 'timestamp' : timestamps}
 df = pd.DataFrame(columns)
-#df.to_csv('/Users/emg/Programmming/GitHub/cmv/raw_data/cmv_mod_snapshots.csv')
+df.to_csv('/Users/emg/Programming/GitHub/cmv/raw_data/cmv_mod_snapshots.csv')
 
 ##### SCRAPE  + COMPILE MOD INFO
-df = pd.read_csv('/Users/emg/Programmming/GitHub/cmv/raw_data/cmv_mod_snapshots.csv', index_col=0)
+df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/raw_data/cmv_mod_snapshots.csv', index_col=0)
 
 def scrape_mod_table(url): 
     '''pulls mod info from soup object of /about/moderators snapshot
@@ -84,7 +87,7 @@ for url in df['snapshot']:
     scrape_mod_table(url)
 
 mods = pd.concat(dfs)
-mods.to_csv('/Users/emg/Programmming/GitHub/cmv/tidy_data/dated_mod_df.csv')
+mods.to_csv('/Users/emg/Programming/GitHub/cmv/tidy_data/dated_mod_df.csv')
 
 
 ##### USING ANDY'S EVENT VIS
