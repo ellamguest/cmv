@@ -1,0 +1,110 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr  4 17:30:46 2017
+
+@author: emg
+"""
+import pandas as od
+
+old = pd.read_csv('/Users/emg/Programming/GitHub/the_donald_project/raw_data/all_mods_merged.csv', index_col=1)
+old = old[['name','date','pubdate']]
+
+subset_old = (old[['name', 'date', 'pubdate']].copy()
+                .assign(
+                    date=lambda old: old['date'].pipe(pd.to_datetime).dt.normalize(),
+                    pubdate=lambda old: old['pubdate'].pipe(pd.to_datetime).dt.normalize()))
+    
+subset_old = subset_old.sort_values(['name','date'])
+    
+not_seen_old = (subset_old
+                    .groupby(['pubdate', 'name']).first()['date']
+                    .unstack()
+                    .isnull()
+                    .resample('D').pad())
+
+
+
+
+
+
+###########
+df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/tidy_data/dated_mod_df.csv', index_col=0)
+df['date'] = pd.to_datetime(df['date'])
+df['pubdate'] = df['pubdate'].astype(str)
+df['pubdate'] = df['pubdate'].apply(lambda t:'{}/{}/{}'.format(t[:4],t[4:6],t[6:8]))
+df['pubdate'] = pd.to_datetime(df['pubdate'])
+
+subset = (df[['name', 'date', 'pubdate']].copy()
+                .assign(
+                    date=lambda df: df['date'].pipe(pd.to_datetime).dt.normalize(),
+                    pubdate=lambda df: df['pubdate'].pipe(pd.to_datetime).dt.normalize()))
+    
+subset = subset.sort_values(['name','date'])
+    
+seen = (subset
+                    .groupby(['date', 'name']).first()['pubdate']
+                    .unstack()
+                    .isnull()
+                    .pipe(lambda x: ~x)
+                    .resample('D').mean()
+                    .fillna(0)
+                    .astype(bool))   
+not_seen = subset.groupby(['pubdate','name']).first()['date'].unstack().isnull().resample('D').pad()
+
+not_seen.sum()
+
+output = {}
+current = pd.Series(False, seen.columns)    
+for d in seen.index & not_seen.index:
+    joined, left = seen.loc[d], not_seen.loc[d]
+    current[joined] = True
+    current[left] = False
+    output[d] = current.copy()
+output_df = pd.concat(output, 1).T
+weeks = output.resample('W').last()
+weeks.sum()
+
+
+
+#### my attempts
+lines = []
+for d in seen.index & not_seen.index:
+    joined, left = seen.loc[d], ~not_seen.loc[d]
+
+
+#### **************** #####
+instances_list = subset.groupby(['name','date']).last()
+
+from datetime import date, datetime, timedelta
+
+def perdelta(start, end, delta):
+    curr = start
+    while curr < end:
+        yield curr
+        curr += delta
+
+for result in perdelta(date(2011, 10, 10), date(2011, 12, 12), timedelta(days=4)):
+    print result
+
+
+
+
+
+#########
+from io import StringIO
+
+s = u"""pubdate             name       date
+8  2014-07-31         A_Mirror 2013-06-29
+8  2014-08-12         A_Mirror 2013-06-29
+7  2014-12-28         A_Mirror 2013-06-29
+7  2014-12-28         A_Mirror 2013-06-29
+6  2015-05-21         A_Mirror 2013-06-29"""
+
+subset = pd.read_csv(StringIO(s), sep='\s+')
+subset['pubdate'] = pd.to_datetime(subset['pubdate'])
+
+not_seen = (subset
+                    .groupby(['pubdate', 'name']).first()['date']
+                    .unstack()
+                    .isnull())

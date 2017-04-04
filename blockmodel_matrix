@@ -28,9 +28,9 @@ m = m[m.index.isin(reps)]
 
 
 # PLOT HEATMAP
-cg = sns.clustermap(m, figsize=(15,13))
+cg = sns.clustermap(m.T, figsize=(15,13))
 plt.setp(cg.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
-cg.ax_heatmap.set_title('changemyview Subreddit-Moderator Matrix', fontsize=20)
+cg.ax_heatmap.set_title('The_Donald Subreddit-Moderator Matrix', fontsize=20)
 cg.ax_heatmap.set_xlabel('Moderator', fontsize=15)
 cg.ax_heatmap.set_ylabel('Subreddit', fontsize=15)
 

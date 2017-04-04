@@ -63,7 +63,7 @@ df.to_csv('/Users/emg/Programming/GitHub/cmv/raw_data/cmv_mod_snapshots.csv')
 ##### SCRAPE  + COMPILE MOD INFO
 df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/raw_data/cmv_mod_snapshots.csv', index_col=0)
 
-def scrape_mod_table(url): 
+def scrape_mod_table(url): '
     '''pulls mod info from soup object of /about/moderators snapshot
        dumps info into a dataframe '''
     soup = make_soup(url)
