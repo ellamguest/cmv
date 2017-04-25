@@ -5,106 +5,119 @@ Created on Tue Apr  4 17:30:46 2017
 
 @author: emg
 """
-import pandas as od
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt 
 
-old = pd.read_csv('/Users/emg/Programming/GitHub/the_donald_project/raw_data/all_mods_merged.csv', index_col=1)
-old = old[['name','date','pubdate']]
+# CMV data
+#df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/tidy_data/dated_mod_df.csv', index_col=0)
+#df['pubdate'] = df['pubdate'].astype(str)
+#df['pubdate'] = df['pubdate'].apply(lambda t:'{}/{}/{}'.format(t[:4],t[4:6],t[6:8]))
+#df['perm_level'] = np.where(df['permissions']=='+all', 2, 1)
 
-subset_old = (old[['name', 'date', 'pubdate']].copy()
-                .assign(
-                    date=lambda old: old['date'].pipe(pd.to_datetime).dt.normalize(),
-                    pubdate=lambda old: old['pubdate'].pipe(pd.to_datetime).dt.normalize()))
-    
-subset_old = subset_old.sort_values(['name','date'])
-    
-not_seen_old = (subset_old
-                    .groupby(['pubdate', 'name']).first()['date']
-                    .unstack()
-                    .isnull()
-                    .resample('D').pad())
+# TD data
+df = pd.read_csv('/Users/emg/Programming/GitHub/the_donald_project/raw_data/all_mods_merged.csv', index_col=1)
+df['perm_level'] = np.where(df['permissions']=='+all', 2, 1)
+#df['permissions'].value_counts()
 
-
-
-
-
-
-###########
-df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/tidy_data/dated_mod_df.csv', index_col=0)
-df['date'] = pd.to_datetime(df['date'])
-df['pubdate'] = df['pubdate'].astype(str)
-df['pubdate'] = df['pubdate'].apply(lambda t:'{}/{}/{}'.format(t[:4],t[4:6],t[6:8]))
-df['pubdate'] = pd.to_datetime(df['pubdate'])
-
-subset = (df[['name', 'date', 'pubdate']].copy()
+subset = (df[['name', 'date', 'pubdate', 'perm_level']].copy()
                 .assign(
                     date=lambda df: df['date'].pipe(pd.to_datetime).dt.normalize(),
                     pubdate=lambda df: df['pubdate'].pipe(pd.to_datetime).dt.normalize()))
-    
-subset = subset.sort_values(['name','date'])
-    
-seen = (subset
-                    .groupby(['date', 'name']).first()['pubdate']
-                    .unstack()
-                    .isnull()
-                    .pipe(lambda x: ~x)
-                    .resample('D').mean()
-                    .fillna(0)
-                    .astype(bool))   
-not_seen = subset.groupby(['pubdate','name']).first()['date'].unstack().isnull().resample('D').pad()
-
-not_seen.sum()
-
-output = {}
-current = pd.Series(False, seen.columns)    
-for d in seen.index & not_seen.index:
-    joined, left = seen.loc[d], not_seen.loc[d]
-    current[joined] = True
-    current[left] = False
-    output[d] = current.copy()
-output_df = pd.concat(output, 1).T
-weeks = output.resample('W').last()
-weeks.sum()
 
 
-
-#### my attempts
-lines = []
-for d in seen.index & not_seen.index:
-    joined, left = seen.loc[d], ~not_seen.loc[d]
+subset = subset.drop_duplicates(['name','date'], keep='last')
+subset.set_index('name', inplace=True, drop=False)
 
 
-#### **************** #####
-instances_list = subset.groupby(['name','date']).last()
+# list of dates
+def date_range(df):
+    # get list of days between first mod 'date' and last 'pubdate'
+    start = subset['date'].min()
+    end = subset['pubdate'].max()
+    dates = list(pd.date_range(start, end, freq='D'))
+    return dates
 
-from datetime import date, datetime, timedelta
+def date_list(dates, start, end, perm_level=0):
+    # return a boolean list of presence for the dates range
+    # default values 1 unless perm_level given
+    dl = []
+    for date in dates:
+            if date > start and date <= end:
+                dl.append(perm_level)
+            else:
+                dl.append(0)
+    return dl
 
-def perdelta(start, end, delta):
-    curr = start
-    while curr < end:
-        yield curr
-        curr += delta
+def check_repeats(df):
+    # check in name has multiple mod instance
+    count = df['name'].value_counts()
+    repeats = list(count[count>1].index)
+    return repeats
 
-for result in perdelta(date(2011, 10, 10), date(2011, 12, 12), timedelta(days=4)):
-    print result
+def timeline_dict(df, names, dates):
+    #list of names must have no repeat mods
+    # df has names as index and columns 'date' and 'pubdate
+    d = {}
+    repeats = check_repeats(df)
+    for name in names:
+        if name not in repeats:
+            info = date_list(dates,
+                             start=df.loc[name]['date'],
+                             end=df.loc[name]['pubdate'],
+                             perm_level=df.loc[name]['perm_level'])
+            d[name] = info
+        else:
+            data =  subset.loc[name]
+            lines = []
+            for row in data.itertuples():
+                start, end, perm_level = row[2], row[3], row[4]
+                line = date_list(dates, start, end, perm_level)
+                lines.append(line)
+            info = [x + y for x, y in zip(lines[0],lines[1])]
+            d[name] = info
+    return d
+
+def timeline_df(df):
+    #df should have columns name date, pubdate, perm_level
+    # df index should be qual to names
+    names = list(set(subset['name']))
+    dates = date_range(subset)
+    t_dict = timeline_dict(subset, names, dates)
+    timeline = pd.DataFrame.from_dict(t_dict)
+    timeline.index = dates
+    return timeline
+
+timeline = timeline_df(subset)
+ 
+
+       
+# test plot
+weeks = timeline.resample('W').last()
+
+sns.set_style("white") # set aes to white w/out grid
+mask = weeks.replace(0, np.nan).isnull() # mask 0s
+cg = sns.clustermap(weeks, row_cluster=False, cmap='Set1', mask=mask)
 
 
 
 
 
-#########
-from io import StringIO
+# full plot
+def plot():
+    cg = sns.clustermap(weeks, row_cluster=False, cmap='Dark2')
+    plt.setp(cg.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+    cg.ax_heatmap.set_title('Timeline of Moderator Presence', fontsize=20)
+    cg.ax_heatmap.set_ylabel('Date (in weeks)', fontsize=15)
+    cg.ax_heatmap.set_xlabel('Moderator', fontsize=15)
 
-s = u"""pubdate             name       date
-8  2014-07-31         A_Mirror 2013-06-29
-8  2014-08-12         A_Mirror 2013-06-29
-7  2014-12-28         A_Mirror 2013-06-29
-7  2014-12-28         A_Mirror 2013-06-29
-6  2015-05-21         A_Mirror 2013-06-29"""
 
-subset = pd.read_csv(StringIO(s), sep='\s+')
-subset['pubdate'] = pd.to_datetime(subset['pubdate'])
 
-not_seen = (subset
-                    .groupby(['pubdate', 'name']).first()['date']
-                    .unstack()
-                    .isnull())
+# testing qualitative color palette
+current_palette = sns.color_palette()
+colours = sns.color_palette('Dark2', 3)
+sns.palplot(current_palette)
+
+my_palette = sns.color_palette(['white','firebrick','indigo'], 3, as_cmap=True)
+sns.palplot(my_palette)

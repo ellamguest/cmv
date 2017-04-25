@@ -8,15 +8,7 @@ Created on Mon Apr  3 12:00:37 2017
 
 import pandas as pd
 
-subreddit = 'changemyview'
-folder = 'cmv'
-
-subreddit = 'The_Donald'
-folder = 'the_donald_project'
-
-
-#df = pd.read_csv('/Users/emg/Programming/GitHub/cmv/raw_data/all_sub_mods.csv',
-#                 index_col=0)
+s
 df = pd.read_csv('/Users/emg/Programming/GitHub/the_donald_project/raw_data/all_sub_mods.csv',
                  index_col=0)
 
